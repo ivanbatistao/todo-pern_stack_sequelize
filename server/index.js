@@ -1,7 +1,7 @@
 const express = require("express")
 const app = express()
 const cors = require("cors")
-const db = require("./db")
+const Todo = require("./model/index")
 
 //middleware
 app.use(cors())
@@ -13,55 +13,63 @@ app.use(express.json())
 app.post("/todos", async (req, res) => {
   try {
     const { description } = req.body
-    const newTodo = await pool.query(
-      "INSERT INTO todo(description) VALUES($1) RETURNING *",
-      [description]
-    )
-    res.json(newTodo.rows[0])
+    const newTodo = await Todo.create({
+      description,
+    })
+    res.json(newTodo)
   } catch (error) {
     console.error(error.message)
   }
 })
-
 // Get all todos
 app.get("/todos", async (req, res) => {
   try {
-    const allTodos = await pool.query("SELECT * FROM todo")
-    res.json(allTodos.rows)
+    const allTodos = await Todo.findAll()
+    res.json(allTodos)
   } catch (error) {
     console.error(error.message)
   }
 })
 
-
-// get a todo
-app.get("/todos/:id", async(req, res) => {
-    try{
-        const { id } = req.params
-        const todos = await pool.query("SELECT * FROM todo WHERE id = $1", [id])
-        res.json(todos.rows[0])
-    } catch(error) {
-        console.error(error.message)
-    }
+// // get a todo
+app.get("/todos/:id", async (req, res) => {
+  try {
+    const { id } = req.params
+    const todo = await Todo.findByPk(id)
+    res.json(todo)
+  } catch (error) {
+    console.error(error.message)
+  }
 })
 
-// update a todo
-app.put("/todos/:id", async(req, res) => {
-    try {
-        const { id } = req.params;
-        const { description } = req.body;
-        const updateTodo = await pool.query("UPDATE todo SET description = $1 WHERE id = $2", [description, id])
-        res.json("Todo was updated")
-    } catch (error) {
-        
-    }
+// // update a todo
+app.put("/todos/:id", async (req, res) => {
+  try {
+    const { id } = req.params
+    const { description } = req.body
+    await Todo.update(
+      {
+        description: description,
+      },
+      {
+        where: {id},
+      }
+    )
+    res.json("Todo was updated")
+  } catch (error) {
+    console.error(error.message)
+  }
 })
 
-// delete a todo
+// // delete a todo
 app.delete("/todos/:id", async(req, res) => {
     try {
         const { id } = req.params
-        const deleteTodo = await pool.query("DELETE FROM todo WHERE id = $1", [id])
+        await Todo.destroy({
+          where: {
+            id
+          }
+        })
         res.json("Todo was deleted")
     } catch (error) {
         console.error(error.message)
@@ -72,8 +80,6 @@ app.get("/", (req, res) => {
   res.send("<h1>Hello</h1>")
 })
 
-
-
-app.listen(5000, () => {
-  console.log("Server has started on port 5000")
+app.listen(5001, () => {
+  console.log("Server has started on port 5001")
 })
